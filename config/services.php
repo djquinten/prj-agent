@@ -19,7 +19,7 @@ return [
     ],
 
     'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
+        'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
@@ -31,15 +31,15 @@ return [
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+            'channel'              => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 
     // LM Studio AI Configuration
     'lm_studio' => [
-        'url' => env('LM_STUDIO_URL', 'http://localhost:1234/v1/chat/completions'),
-        'model' => env('LM_STUDIO_MODEL', 'local-model'),
-        'timeout' => env('LM_STUDIO_TIMEOUT', 30),
+        'url'     => env('LM_STUDIO_URL', 'http://localhost:1234/v1/chat/completions'),
+        'model'   => env('LM_STUDIO_MODEL', 'local-model'),
+        'timeout' => env('LM_STUDIO_TIMEOUT', 120),
     ],
 
 ];

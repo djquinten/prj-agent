@@ -102,33 +102,33 @@ return [
 
         'providers' => [
             'github' => [
-                'driver' => 'github',
-                'repo' => env('GITHUB_REPO'),
-                'owner' => env('GITHUB_OWNER'),
-                'token' => env('GITHUB_TOKEN'),
+                'driver'           => 'github',
+                'repo'             => env('GITHUB_REPO'),
+                'owner'            => env('GITHUB_OWNER'),
+                'token'            => env('GITHUB_TOKEN'),
                 'vPrefixedTagName' => env('GITHUB_V_PREFIXED_TAG_NAME', true),
-                'private' => env('GITHUB_PRIVATE', false),
-                'channel' => env('GITHUB_CHANNEL', 'latest'),
-                'releaseType' => env('GITHUB_RELEASE_TYPE', 'draft'),
+                'private'          => env('GITHUB_PRIVATE', false),
+                'channel'          => env('GITHUB_CHANNEL', 'latest'),
+                'releaseType'      => env('GITHUB_RELEASE_TYPE', 'draft'),
             ],
 
             's3' => [
-                'driver' => 's3',
-                'key' => env('AWS_ACCESS_KEY_ID'),
-                'secret' => env('AWS_SECRET_ACCESS_KEY'),
-                'region' => env('AWS_DEFAULT_REGION'),
-                'bucket' => env('AWS_BUCKET'),
+                'driver'   => 's3',
+                'key'      => env('AWS_ACCESS_KEY_ID'),
+                'secret'   => env('AWS_SECRET_ACCESS_KEY'),
+                'region'   => env('AWS_DEFAULT_REGION'),
+                'bucket'   => env('AWS_BUCKET'),
                 'endpoint' => env('AWS_ENDPOINT'),
-                'path' => env('NATIVEPHP_UPDATER_PATH', null),
+                'path'     => env('NATIVEPHP_UPDATER_PATH', null),
             ],
 
             'spaces' => [
                 'driver' => 'spaces',
-                'key' => env('DO_SPACES_KEY_ID'),
+                'key'    => env('DO_SPACES_KEY_ID'),
                 'secret' => env('DO_SPACES_SECRET_ACCESS_KEY'),
-                'name' => env('DO_SPACES_NAME'),
+                'name'   => env('DO_SPACES_NAME'),
                 'region' => env('DO_SPACES_REGION'),
-                'path' => env('NATIVEPHP_UPDATER_PATH', null),
+                'path'   => env('NATIVEPHP_UPDATER_PATH', null),
             ],
         ],
     ],
@@ -138,10 +138,10 @@ return [
      */
     'queue_workers' => [
         'default' => [
-            'queues' => ['default'],
+            'queues'       => ['default'],
             'memory_limit' => 128,
-            'timeout' => 60,
-            'sleep' => 3,
+            'timeout'      => 300,
+            'sleep'        => 3,
         ],
     ],
 
