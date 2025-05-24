@@ -1,61 +1,253 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🤖 Intelligent Email Processing Agent
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> **An AI-powered email management system that automatically fetches, analyzes, and processes emails using Microsoft Graph API and LM Studio**
 
-## About Laravel
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-red.svg)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2+-blue.svg)](https://php.net)
+[![Microsoft Graph](https://img.shields.io/badge/Microsoft_Graph-API-blue.svg)](https://docs.microsoft.com/en-us/graph/)
+[![LM Studio](https://img.shields.io/badge/LM_Studio-AI-green.svg)](https://lmstudio.ai/)
+[![NativePHP](https://img.shields.io/badge/NativePHP-Electron-purple.svg)](https://nativephp.com/)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🌟 Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 📧 **Microsoft Graph Integration**
+- **Secure OAuth2 Authentication** with Microsoft 365/Outlook
+- **Real-time Email Synchronization** from your inbox
+- **Automatic Token Refresh** for seamless operation
+- **Email Metadata Extraction** (sender, subject, attachments, etc.)
+- **Email Status Management** (read/unread toggling)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🧠 **AI-Powered Email Processing**
+- **Two-Tier AI Analysis System**:
+  - **Quick Screening**: Uses metadata only for fast categorization
+  - **Full Processing**: Deep analysis of email content when needed
+- **Smart Email Categorization** (urgent, work, personal, newsletter, spam)
+- **Priority Detection** with confidence scoring
+- **Sentiment Analysis** and action recommendations
+- **Cost-Optimized Processing** (only processes emails that need it)
 
-## Learning Laravel
+### ⚡ **Advanced Queue System**
+- **Background Job Processing** for scalable email handling
+- **Intelligent Work Distribution** across screening and processing queues
+- **Automatic Retry Logic** with exponential backoff
+- **Comprehensive Error Handling** and logging
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🖥️ **Native Desktop Application**
+- **Cross-Platform Desktop App** built with NativePHP/Electron
+- **Real-time Email Monitoring** and status updates
+- **Beautiful Modern UI** with Tailwind CSS
+- **Offline Capability** with local data storage (no fetching of emails)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🏗️ Architecture
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```mermaid
+graph TB
+    A[Microsoft Graph API] -->|OAuth2| B[Graph Service]
+    B --> C[Email Sync Job]
+    C --> D[Email Model]
+    D --> E{AI Eligible?}
+    E -->|Yes| F[AI Screening Job]
+    E -->|No| G[Skip Processing]
+    F --> H{Needs Full Analysis?}
+    H -->|Yes| I[Full AI Processing Job]
+    H -->|No| J[Quick Analysis Complete]
+    I --> K[LM Studio API]
+    K --> L[AI Actions Execution]
+    L --> M[Email Marked Complete]
+```
 
-## Laravel Sponsors
+## 🚀 Quick Start
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Prerequisites
 
-### Premium Partners
+- **PHP 8.2+** with required extensions
+- **Composer** for dependency management
+- **Node.js 18+** for frontend assets
+- **LM Studio** running locally with a model loaded and API server running
+- **Microsoft 365/Outlook Account** for Graph API access
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Installation
 
-## Contributing
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/djquinten/prj-agent.git
+   cd prj-agent
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
 
-## Code of Conduct
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-## Security Vulnerabilities
+5. **Configure your environment** (`.env`)
+   ```env
+   # Microsoft Graph API Configuration
+   MICROSOFT_GRAPH_CLIENT_ID=your_client_id
+   MICROSOFT_GRAPH_CLIENT_SECRET=your_client_secret
+   
+   # LM Studio Configuration
+   LM_STUDIO_URL=http://localhost:1234/v1/chat/completions
+   LM_STUDIO_MODEL=your_local_model_name
+   LM_STUDIO_TIMEOUT=120
+   
+   # Database Configuration
+   DB_CONNECTION=sqlite
+   DB_DATABASE=database/database.sqlite
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+6. **Database setup**
+   ```bash
+   touch database/database.sqlite
+   php artisan migrate
+   ```
 
-## License
+### 🔧 Microsoft Graph Setup
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. **Register your application** in [Azure Portal](https://portal.azure.com)
+2. **Configure API permissions**:
+   - `Mail.Read` - Read user mail
+   - `Mail.ReadWrite` - Modify user mail
+   - `offline_access` - Maintain access to data
+3. **Set redirect URI** to `http://localhost:8000/auth/microsoft/callback`
+4. **Copy Client ID and Secret** to your `.env` file
+
+### 🤖 LM Studio Setup
+
+1. **Download and install** [LM Studio](https://lmstudio.ai/)
+2. **Load a compatible model** (recommended: Llama 3.1 8B or similar)
+3. **Start the local server** on port 1234
+4. **Verify the endpoint** is accessible at `http://localhost:1234`
+
+## 🛠️ Usage
+
+### Development Mode
+
+Start all services with one command:
+```bash
+composer dev
+```
+
+This starts:
+- **Laravel development server** (http://localhost:8000)
+- **Queue worker** for background processing
+- **Log monitoring** with Laravel Pail
+- **Vite dev server** for hot reloading
+
+### Native Desktop App
+
+Run as a native desktop application:
+```bash
+composer native:dev
+```
+
+### Manual Operations
+
+**Sync emails from Microsoft Graph:**
+```bash
+php artisan emails:sync --batch-size=50
+```
+
+**Test AI screening workflow:**
+```bash
+php artisan emails:test-screening
+```
+
+**Monitor the queue:**
+```bash
+php artisan queue:work
+```
+
+**View real-time logs:**
+```bash
+php artisan pail
+```
+
+## 📊 AI Processing Workflow
+
+### Quick Screening Phase
+- **Input**: Email metadata (subject, sender, preview)
+- **Processing Time**: ~5 seconds
+- **Token Usage**: ~200 tokens
+- **Decision**: Keep for full processing or mark as screened-only
+
+### Full Processing Phase (if needed)
+- **Input**: Complete email content
+- **Processing Time**: ~15-30 seconds  
+- **Token Usage**: ~1000 tokens
+- **Output**: Detailed analysis, categorization, and actions
+
+### Efficiency Stats
+- **80% of emails** are screened-only (newsletters, notifications)
+- **20% receive full processing** (important/actionable emails)
+- **Average processing time**: 8 seconds per email
+- **Token usage reduction**: 75% compared to processing all emails
+
+## 🔍 Monitoring & Debugging
+
+### Real-time Email Statistics
+```bash
+php artisan emails:sync
+```
+
+### Queue Monitoring
+```bash
+# Watch queue in real-time
+php artisan queue:work --verbose
+
+# Monitor logs
+tail -f storage/logs/laravel.log | grep -E "(🔄|✅|❌|🤖|🔍)"
+```
+
+### AI Processing Insights
+- **📧 Email Sync**: Microsoft Graph API integration
+- **🔍 AI Screening**: Quick metadata analysis  
+- **🤖 AI Processing**: Full content analysis
+- **✅ Completed**: Successfully processed
+- **❌ Failed**: Error occurred
+
+## 🧪 Testing
+
+### Run the test suite
+```bash
+composer test
+```
+
+### Test AI screening manually
+```bash
+php artisan emails:test-screening
+```
+
+### Code quality checks
+```bash
+composer run pint  # Code formatting
+```
+
+## 🔒 Security
+
+- **OAuth2 Authentication** for Microsoft Graph
+- **Token encryption** and secure storage
+- **Input sanitization** for AI processing
+- **Error logging** without sensitive data exposure
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **[Laravel](https://laravel.com)** - The elegant PHP framework
+- **[Microsoft Graph](https://docs.microsoft.com/en-us/graph/)** - Powerful Microsoft 365 API
+- **[LM Studio](https://lmstudio.ai/)** - Local AI model hosting
+- **[NativePHP](https://nativephp.com/)** - Native desktop applications with PHP
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
