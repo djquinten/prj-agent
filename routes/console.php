@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Jobs\SyncEmailsFromGraphApi;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+Schedule::job(new SyncEmailsFromGraphApi(25, true))
+    ->everyFiveMinutes()
+    ->name('sync-emails-from-graph')
+    ->description('Sync emails from Microsoft Graph API and queue for AI processing')
+    ->withoutOverlapping(10);
