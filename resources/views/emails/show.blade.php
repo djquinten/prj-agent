@@ -267,7 +267,13 @@
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center justify-between mb-2">
                                                 <h4 class="text-base font-semibold text-slate-900 dark:text-white capitalize">
-                                                    {{ str_replace('_', ' ', $action['action']) }}
+                                                    @if(isset($action['action']))
+                                                        {{ str_replace('_', ' ', $action['action']) }}
+                                                    @elseif(isset($action['tool_name']))
+                                                        {{ str_replace('_', ' ', $action['tool_name']) }}
+                                                    @else
+                                                        Unknown Action
+                                                    @endif
                                                 </h4>
                                                 <span class="text-xs font-medium px-2 py-1 rounded-full capitalize
                                                     @if($action['status'] === 'success') bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300
@@ -281,6 +287,23 @@
                                                 <p class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
                                                     <strong>Error:</strong> {{ $action['error'] }}
                                                 </p>
+                                            @endif
+                                            @if(isset($action['result']) && is_array($action['result']) && isset($action['result']['details']))
+                                                <div class="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 p-2 rounded-lg mt-2">
+                                                    <strong>Result:</strong>
+                                                    @if(isset($action['result']['message']))
+                                                        <p>{{ $action['result']['message'] }}</p>
+                                                    @endif
+                                                    @if(isset($action['result']['details']))
+                                                        <div class="mt-1 text-xs">
+                                                            @foreach($action['result']['details'] as $key => $value)
+                                                                @if(is_string($value))
+                                                                    <div><strong>{{ ucfirst(str_replace('_', ' ', $key)) }}:</strong> {{ $value }}</div>
+                                                                @endif
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             @endif
                                         </div>
                                     </div>
