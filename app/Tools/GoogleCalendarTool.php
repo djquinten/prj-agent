@@ -76,7 +76,7 @@ class GoogleCalendarTool implements ToolCallInterface
         try {
             // Handle both 'title' and 'summary' parameter names (AI might use either)
             $title = $parameters['title'] ?? $parameters['summary'] ?? null;
-            
+
             // Validate required parameters
             if (empty($title) || empty($parameters['start_time']) || empty($parameters['end_time'])) {
                 return [
@@ -87,9 +87,9 @@ class GoogleCalendarTool implements ToolCallInterface
 
             // Parse and validate date/time formats
             $startTime = $this->parseDateTime($parameters['start_time']);
-            $endTime = $this->parseDateTime($parameters['end_time']);
+            $endTime   = $this->parseDateTime($parameters['end_time']);
 
-            if (!$startTime || !$endTime) {
+            if (! $startTime || ! $endTime) {
                 return [
                     'success' => false,
                     'error'   => 'Invalid date/time format. Please use ISO 8601 format (e.g., 2024-01-15T14:00:00Z)',
@@ -225,37 +225,41 @@ class GoogleCalendarTool implements ToolCallInterface
         } catch (\Exception $e) {
             // If that fails, try to handle relative dates
             $dateTimeString = strtolower(trim($dateTimeString));
-            
+
             // Handle relative dates
             if (str_contains($dateTimeString, 'tomorrow')) {
                 $time = $this->extractTimeFromString($dateTimeString);
+
                 return \Carbon\Carbon::tomorrow()->setTimeFromTimeString($time ?: '09:00');
             }
-            
+
             if (str_contains($dateTimeString, 'today')) {
                 $time = $this->extractTimeFromString($dateTimeString);
+
                 return \Carbon\Carbon::today()->setTimeFromTimeString($time ?: '09:00');
             }
-            
+
             if (str_contains($dateTimeString, 'next week')) {
                 $time = $this->extractTimeFromString($dateTimeString);
+
                 return \Carbon\Carbon::now()->addWeek()->setTimeFromTimeString($time ?: '09:00');
             }
-            
+
             // Handle "next [day]" patterns
             $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             foreach ($days as $day) {
                 if (str_contains($dateTimeString, "next $day")) {
                     $time = $this->extractTimeFromString($dateTimeString);
+
                     return \Carbon\Carbon::parse("next $day")->setTimeFromTimeString($time ?: '09:00');
                 }
             }
-            
+
             Log::warning('Failed to parse date/time string', [
                 'input' => $dateTimeString,
                 'error' => $e->getMessage(),
             ]);
-            
+
             return null;
         }
     }
@@ -267,38 +271,38 @@ class GoogleCalendarTool implements ToolCallInterface
     {
         // Match patterns like "6 PM", "6:30 PM", "18:00", "2:30"
         if (preg_match('/(\d{1,2}):?(\d{2})?\s*(am|pm)/i', $string, $matches)) {
-            $hour = (int)$matches[1];
-            $minute = isset($matches[2]) ? (int)$matches[2] : 0;
-            $ampm = strtolower($matches[3]);
-            
+            $hour   = (int) $matches[1];
+            $minute = isset($matches[2]) ? (int) $matches[2] : 0;
+            $ampm   = strtolower($matches[3]);
+
             if ($ampm === 'pm' && $hour !== 12) {
                 $hour += 12;
             } elseif ($ampm === 'am' && $hour === 12) {
                 $hour = 0;
             }
-            
+
             return sprintf('%02d:%02d', $hour, $minute);
         }
-        
+
         // Match 24-hour format
         if (preg_match('/(\d{1,2}):(\d{2})/', $string, $matches)) {
-            return sprintf('%02d:%02d', (int)$matches[1], (int)$matches[2]);
+            return sprintf('%02d:%02d', (int) $matches[1], (int) $matches[2]);
         }
-        
+
         // Match just hour with AM/PM
         if (preg_match('/(\d{1,2})\s*(am|pm)/i', $string, $matches)) {
-            $hour = (int)$matches[1];
+            $hour = (int) $matches[1];
             $ampm = strtolower($matches[2]);
-            
+
             if ($ampm === 'pm' && $hour !== 12) {
                 $hour += 12;
             } elseif ($ampm === 'am' && $hour === 12) {
                 $hour = 0;
             }
-            
+
             return sprintf('%02d:00', $hour);
         }
-        
+
         return null;
     }
 

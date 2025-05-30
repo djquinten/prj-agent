@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Native\Laravel\Contracts\ProvidesPhpIni;
+use Native\Laravel\Facades\Menu;
+use Native\Laravel\Facades\MenuBar;
 use Native\Laravel\Facades\Window;
 
 class NativeAppServiceProvider implements ProvidesPhpIni
@@ -18,7 +20,23 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->width(1200)
             ->height(800)
             ->minWidth(800)
-            ->minHeight(600);
+            ->minHeight(600)
+            ->route('settings')
+            ->titleBarHidden();
+
+        MenuBar::create()
+            ->showDockIcon()
+            ->onlyShowContextMenu()
+            ->withContextMenu(
+                Menu::make(
+                    Menu::label('My Application'),
+                    Menu::separator(),
+                    Menu::link('https://nativephp.com', 'Learn more…')
+                        ->openInBrowser(),
+                    Menu::separator(),
+                    Menu::quit()
+                )
+            );
     }
 
     /**
