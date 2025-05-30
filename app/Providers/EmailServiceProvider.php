@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Contracts\EmailRepositoryInterface;
 use App\Repositories\EmailRepository;
 use App\Services\EmailService;
+use App\Services\GoogleCalendarService;
 use App\Services\MicrosoftGraphService;
+use App\Services\ToolCallService;
 use Illuminate\Support\ServiceProvider;
 
 class EmailServiceProvider extends ServiceProvider
@@ -24,6 +26,11 @@ class EmailServiceProvider extends ServiceProvider
         // Register Google Calendar Service
         $this->app->singleton(GoogleCalendarService::class, function ($app) {
             return new GoogleCalendarService;
+        });
+
+        // Register Tool Call Service
+        $this->app->singleton(ToolCallService::class, function ($app) {
+            return new ToolCallService;
         });
     }
 }

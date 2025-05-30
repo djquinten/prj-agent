@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Email;
 use App\Services\MicrosoftGraphService;
+use App\Services\ToolCallService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
@@ -36,7 +37,7 @@ class ProcessEmailWithAi implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(MicrosoftGraphService $graphService): void
+    public function handle(MicrosoftGraphService $graphService, ToolCallService $toolCallService): void
     {
         $email = Email::find($this->emailId);
 
@@ -68,8 +69,11 @@ class ProcessEmailWithAi implements ShouldQueue
             // Prepare email content for AI
             $emailContent = $this->prepareEmailContent($email);
 
-            // Get AI analysis
-            $aiResponse = $this->callLmStudio($emailContent);
+            // Get available tools for this email
+            $availableTools = $toolCallService->getAvailableTools($email);
+
+            // Get AI analysis with tool calls
+            $aiResponse = $this->callLmStudioWithTools($emailContent, $availableTools);
 
             if (! $aiResponse) {
                 $email->markAiFailed('Failed to get response from LM Studio');
@@ -77,22 +81,29 @@ class ProcessEmailWithAi implements ShouldQueue
                 return;
             }
 
-            // Parse AI response and extract actions
+            // Parse AI response and extract actions/tool calls
             $analysis = $this->parseAiResponse($aiResponse);
 
-            // Execute actions if any
-            $executedActions = $this->executeActions($email, $analysis['actions'], $graphService);
+            // Execute traditional actions
+            $executedActions = $this->executeActions($email, $analysis['actions'] ?? [], $graphService);
+
+            // Execute tool calls if any
+            $executedToolCalls = $this->executeToolCalls($email, $analysis['tool_calls'] ?? [], $toolCallService);
+
+            // Combine all executed actions
+            $allExecutedActions = array_merge($executedActions, $executedToolCalls);
 
             // Mark as completed
             $email->markAiProcessed(
                 $analysis['response'],
-                $executedActions,
+                $allExecutedActions,
                 Email::AI_STATUS_COMPLETED
             );
 
             Log::info('✅ AI processing completed', [
                 'email_id'         => $this->emailId,
                 'actions_executed' => count($executedActions),
+                'tools_executed'   => count($executedToolCalls),
                 'summary'          => $analysis['summary'] ?? 'No summary',
             ]);
 
@@ -163,22 +174,25 @@ class ProcessEmailWithAi implements ShouldQueue
     }
 
     /**
-     * Call LM Studio AI service
+     * Call LM Studio AI service with tool support
      */
-    private function callLmStudio(array $emailContent): ?string
+    private function callLmStudioWithTools(array $emailContent, array $availableTools): ?string
     {
         try {
-            $systemPrompt = $this->getSystemPrompt();
+            $systemPrompt = $this->getSystemPromptWithTools($availableTools);
             $userPrompt   = $this->getUserPrompt($emailContent);
             $timeout      = config('services.lm_studio.timeout', 120);
 
-            Log::info('🔄 Calling LM Studio API', [
-                'url'     => $this->lmStudioUrl,
-                'model'   => $this->aiModel,
-                'timeout' => $timeout,
+            Log::info('🔄 Calling LM Studio API with tools', [
+                'url'             => $this->lmStudioUrl,
+                'model'           => $this->aiModel,
+                'timeout'         => $timeout,
+                'tools_available' => count($availableTools),
+                'system_prompt'   => $systemPrompt,
+                'user_prompt'     => $userPrompt,
             ]);
 
-            $response = Http::timeout($timeout)->post($this->lmStudioUrl, [
+            $requestData = [
                 'model'    => $this->aiModel,
                 'messages' => [
                     [
@@ -195,54 +209,14 @@ class ProcessEmailWithAi implements ShouldQueue
                     'json_schema' => [
                         'name'   => 'email_analysis_response',
                         'strict' => true,
-                        'schema' => [
-                            'type'       => 'object',
-                            'properties' => [
-                                'summary' => [
-                                    'type' => 'string',
-                                ],
-                                'priority' => [
-                                    'type' => 'string',
-                                    'enum' => ['high', 'medium', 'low'],
-                                ],
-                                'category' => [
-                                    'type' => 'string',
-                                    'enum' => ['work', 'personal', 'newsletter', 'spam', 'support'],
-                                ],
-                                'sentiment' => [
-                                    'type' => 'string',
-                                    'enum' => ['positive', 'neutral', 'negative'],
-                                ],
-                                'actions' => [
-                                    'type'  => 'array',
-                                    'items' => [
-                                        'type'       => 'object',
-                                        'properties' => [
-                                            'action' => [
-                                                'type' => 'string',
-                                                'enum' => ['mark_important', 'mark_read', 'create_task', 'schedule_reply', 'flag_spam'],
-                                            ],
-                                            'reason' => [
-                                                'type' => 'string',
-                                            ],
-                                            'execute' => [
-                                                'type' => 'boolean',
-                                            ],
-                                        ],
-                                        'required' => ['action', 'reason', 'execute'],
-                                    ],
-                                ],
-                                'response' => [
-                                    'type' => 'string',
-                                ],
-                            ],
-                            'required' => ['summary', 'priority', 'category', 'sentiment', 'actions', 'response'],
-                        ],
+                        'schema' => $this->getResponseSchema($availableTools),
                     ],
                 ],
                 'temperature' => 0.7,
-                'max_tokens'  => 1000,
-            ]);
+                'max_tokens'  => 1500,
+            ];
+
+            $response = Http::timeout($timeout)->post($this->lmStudioUrl, $requestData);
 
             if (! $response->successful()) {
                 Log::error('LM Studio API error', [
@@ -272,21 +246,121 @@ class ProcessEmailWithAi implements ShouldQueue
         }
     }
 
-    private function getSystemPrompt(): string
+    /**
+     * Get system prompt with tool information
+     */
+    private function getSystemPromptWithTools(array $availableTools): string
     {
-        return 'You are an intelligent email assistant. Analyze emails and suggest actions.
+        $basePrompt = 'You are an intelligent email assistant. Analyze emails and suggest actions and tool calls.
 
 Analyze the email content and provide:
 - summary: Brief summary of the email
 - priority: high|medium|low based on urgency and importance
 - category: work|personal|newsletter|spam|support
 - sentiment: positive|neutral|negative tone of the email
-- actions: Array of suggested actions with reasons and execution flags
+- actions: Array of suggested traditional actions with reasons and execution flags
+- tool_calls: Array of tool calls to execute with parameters
 - response: Detailed analysis and recommendations
 
-Available actions: mark_important, mark_read, create_task, schedule_reply, flag_spam
+Available traditional actions: mark_important, mark_read, create_task, schedule_reply, flag_spam
 
-Only suggest actions that are appropriate and safe. Never suggest deleting emails or taking destructive actions.';
+IMPORTANT: When creating calendar events, you MUST convert all relative dates to absolute ISO 8601 format:
+- "tomorrow at 6 PM" → "2024-01-16T18:00:00Z" (use actual tomorrow\'s date)
+- "next Monday at 2 PM" → "2024-01-22T14:00:00Z" (use actual next Monday\'s date)
+- "today at 3:30 PM" → "2024-01-15T15:30:00Z" (use actual today\'s date)
+
+Current date/time context: ' . now()->toISOString() . ' (use this as reference for relative dates)
+
+Only suggest actions and tool calls that are appropriate and safe. Never suggest deleting emails or taking destructive actions.';
+
+        if (! empty($availableTools)) {
+            $basePrompt .= "\n\nAvailable tools for this email:\n";
+            foreach ($availableTools as $tool) {
+                $basePrompt .= "- {$tool['name']}: {$tool['description']}\n";
+            }
+            $basePrompt .= "\nUse tool_calls when you detect relevant content that matches the tool capabilities.";
+        }
+
+        return $basePrompt;
+    }
+
+    /**
+     * Get response schema including tool calls
+     */
+    private function getResponseSchema(array $availableTools): array
+    {
+        $schema = [
+            'type'       => 'object',
+            'properties' => [
+                'summary' => [
+                    'type' => 'string',
+                ],
+                'priority' => [
+                    'type' => 'string',
+                    'enum' => ['high', 'medium', 'low'],
+                ],
+                'category' => [
+                    'type' => 'string',
+                    'enum' => ['work', 'personal', 'newsletter', 'spam', 'support'],
+                ],
+                'sentiment' => [
+                    'type' => 'string',
+                    'enum' => ['positive', 'neutral', 'negative'],
+                ],
+                'actions' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'action' => [
+                                'type' => 'string',
+                                'enum' => ['mark_important', 'mark_read', 'create_task', 'schedule_reply', 'flag_spam'],
+                            ],
+                            'reason' => [
+                                'type' => 'string',
+                            ],
+                            'execute' => [
+                                'type' => 'boolean',
+                            ],
+                        ],
+                        'required' => ['action', 'reason', 'execute'],
+                    ],
+                ],
+                'response' => [
+                    'type' => 'string',
+                ],
+            ],
+            'required' => ['summary', 'priority', 'category', 'sentiment', 'actions', 'response'],
+        ];
+
+        // Add tool_calls to schema if tools are available
+        if (! empty($availableTools)) {
+            $schema['properties']['tool_calls'] = [
+                'type'  => 'array',
+                'items' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'tool_name' => [
+                            'type' => 'string',
+                            'enum' => array_column($availableTools, 'name'),
+                        ],
+                        'parameters' => [
+                            'type' => 'object',
+                        ],
+                        'reason' => [
+                            'type' => 'string',
+                        ],
+                        'execute' => [
+                            'type' => 'boolean',
+                        ],
+                    ],
+                    'required' => ['tool_name', 'parameters', 'reason', 'execute'],
+                ],
+            ];
+            $schema['required'][] = 'tool_calls';
+        }
+
+        return $schema;
     }
 
     /**
@@ -352,7 +426,7 @@ Analyze this email and provide your assessment and recommendations.";
     }
 
     /**
-     * Execute suggested actions
+     * Execute traditional actions
      */
     private function executeActions(Email $email, array $actions, MicrosoftGraphService $graphService): array
     {
@@ -460,6 +534,69 @@ Analyze this email and provide your assessment and recommendations.";
         }
 
         return $executedActions;
+    }
+
+    /**
+     * Execute tool calls
+     */
+    private function executeToolCalls(Email $email, array $toolCalls, ToolCallService $toolCallService): array
+    {
+        $executedToolCalls = [];
+
+        foreach ($toolCalls as $toolCall) {
+            if (! isset($toolCall['execute']) || ! $toolCall['execute']) {
+                continue;
+            }
+
+            $toolName   = $toolCall['tool_name'] ?? '';
+            $parameters = $toolCall['parameters'] ?? [];
+            $reason     = $toolCall['reason'] ?? 'No reason provided';
+
+            try {
+                $result = $toolCallService->executeTool($email, $toolName, $parameters);
+
+                $executedToolCalls[] = [
+                    'type'       => 'tool_call',
+                    'tool_name'  => $toolName,
+                    'parameters' => $parameters,
+                    'reason'     => $reason,
+                    'status'     => $result['success'] ? 'success' : 'failed',
+                    'result'     => $result,
+                ];
+
+                if ($result['success']) {
+                    Log::info('🔧 Tool call executed successfully', [
+                        'email_id'  => $email->id,
+                        'tool_name' => $toolName,
+                        'result'    => $result,
+                    ]);
+                } else {
+                    Log::warning('🔧 Tool call failed', [
+                        'email_id'  => $email->id,
+                        'tool_name' => $toolName,
+                        'error'     => $result['error'] ?? 'Unknown error',
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                Log::error('❌ Tool call execution failed', [
+                    'email_id'  => $email->id,
+                    'tool_name' => $toolName,
+                    'error'     => $e->getMessage(),
+                ]);
+
+                $executedToolCalls[] = [
+                    'type'       => 'tool_call',
+                    'tool_name'  => $toolName,
+                    'parameters' => $parameters,
+                    'reason'     => $reason,
+                    'status'     => 'failed',
+                    'error'      => $e->getMessage(),
+                ];
+            }
+        }
+
+        return $executedToolCalls;
     }
 
     /**
