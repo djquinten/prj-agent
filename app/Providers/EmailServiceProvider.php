@@ -20,5 +20,10 @@ class EmailServiceProvider extends ServiceProvider
                 $app->make(MicrosoftGraphService::class)
             );
         });
+
+        // Register Google Calendar Service
+        $this->app->singleton(GoogleCalendarService::class, function ($app) {
+            return new GoogleCalendarService;
+        });
     }
 }

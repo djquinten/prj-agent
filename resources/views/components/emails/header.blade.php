@@ -7,7 +7,7 @@
             </div>
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">AI Email Automation</h1>
-                <p class="text-slate-600 dark:text-slate-300 font-medium">Microsoft Graph API + Local AI Processing</p>
+                <p class="text-slate-600 dark:text-slate-300 font-medium">Microsoft Graph API + Local AI Processing + Google Calendar</p>
             </div>
             <div class="flex items-center space-x-2 ml-6">
                 <div class="live-indicator animate-pulse">
@@ -90,7 +90,41 @@
                 <span>Debug</span>
             </a>
 
-            <!-- Authentication Button -->
+            <!-- Google Calendar Authentication -->
+            @php
+                $googleCalendarService = app(\App\Services\GoogleCalendarService::class);
+                $googleCalendarAuthenticated = $googleCalendarService->isAuthenticated();
+            @endphp
+
+            @if($googleCalendarAuthenticated)
+                <form method="POST" action="{{ route('google-calendar.logout') }}" class="inline">
+                    @csrf
+                    <button 
+                        type="submit"
+                        class="action-btn warning"
+                        onclick="return confirm('Are you sure you want to logout from Google Calendar?')"
+                        title="Logout from Google Calendar"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h6m-6 0l-1 1v8a2 2 0 002 2h4a2 2 0 002-2V8l-1-1"></path>
+                        </svg>
+                        <span>📅</span>
+                    </button>
+                </form>
+            @else
+                <a 
+                    href="{{ route('google-calendar.login') }}"
+                    class="action-btn warning"
+                    title="Connect Google Calendar for meeting detection"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h6m-6 0l-1 1v8a2 2 0 002 2h4a2 2 0 002-2V8l-1-1"></path>
+                    </svg>
+                    <span>📅</span>
+                </a>
+            @endif
+
+            <!-- Microsoft Graph Authentication -->
             @if($authenticated)
                 <form method="POST" action="{{ route('auth.logout') }}" class="inline">
                     @csrf
@@ -101,7 +135,7 @@
                         title="Logout from Microsoft Graph"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
                         </svg>
                         <span>Logout</span>
                     </button>
@@ -123,12 +157,19 @@
     
     <!-- Status Panel -->
     <div class="mt-6 p-4 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div class="flex items-center space-x-2">
                 <div class="w-2 h-2 rounded-full {{ $authenticated ? 'bg-emerald-500' : 'bg-red-500' }}"></div>
-                <span class="font-medium text-slate-700 dark:text-slate-200">Authentication:</span>
+                <span class="font-medium text-slate-700 dark:text-slate-200">Microsoft Graph:</span>
                 <span class="{{ $authenticated ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }} font-semibold">
                     {{ $authenticated ? 'Connected' : 'Not Connected' }}
+                </span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 rounded-full {{ $googleCalendarAuthenticated ? 'bg-emerald-500' : 'bg-amber-500' }}"></div>
+                <span class="font-medium text-slate-700 dark:text-slate-200">Google Calendar:</span>
+                <span class="{{ $googleCalendarAuthenticated ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }} font-semibold">
+                    {{ $googleCalendarAuthenticated ? 'Connected' : 'Not Connected' }}
                 </span>
             </div>
             <div class="flex items-center space-x-2">
@@ -142,9 +183,15 @@
                 <span class="text-purple-600 dark:text-purple-400 font-semibold">{{ count($emails) }} displayed</span>
             </div>
         </div>
-        @if(!$authenticated)
+        @if(!$authenticated || !$googleCalendarAuthenticated)
             <div class="mt-3 text-xs text-slate-600 dark:text-slate-400">
-                <strong>Debug:</strong> Token may be expired or environment variables not loaded. Check logs for details.
+                <strong>Setup:</strong> 
+                @if(!$authenticated)
+                    Connect Microsoft Graph to sync emails.
+                @endif
+                @if(!$googleCalendarAuthenticated)
+                    Connect Google Calendar to enable meeting detection and automatic calendar event creation.
+                @endif
             </div>
         @endif
     </div>
